@@ -1,0 +1,43 @@
+
+.eslintcache
+*.zip
+
+# æ„å»ºäº§ç‰©ç›®å½•ï¼ˆæ ¸å¿ƒå¿½ç•¥é¡¹ï¼Œä½“ç§¯æœ€å¤§ï¼‰
+dist/
+dist-web/
+dist-win/
+web-deploy/
+web-deploy/dist/
+web-deploy/public/assets/
+out/
+
+# ä¾èµ–åŒ…ç›®å½•ï¼ˆä½“ç§¯å¤§ï¼Œå¯é€šè¿‡ npm install é‡æ–°å®‰è£…ï¼‰
+node_modules/
+
+# ç¼“å­˜æ–‡ä»¶
+*.log*
+.cache/
+temp/
+*.tmp
+
+# ç³»ç»Ÿ/ç¼–è¾‘å™¨ç¼“å­˜
+.DS_Store
+Thumbs.db
+.vscode/extensions/
+.vscode/.history/
+
+# äºŒè¿›åˆ¶å¯æ‰§è¡Œæ–‡ä»¶
+*.exe
+*.dll
+*.so
+*.dylib
+*.icns
+*.ico
+
+"*.zip"           # ºöÂÔËùÓĞ zip Ñ¹Ëõ°ü
+"dist-win/"       # ºöÂÔ±àÒë²úÎïÄ¿Â¼
+"node_modules/"   # ºöÂÔÒÀÀµ°üÄ¿Â¼
+"*.zip" 
+"dist-win/" 
+"node_modules/" 
+"dist/" 

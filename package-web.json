@@ -1,0 +1,21 @@
+{
+  "name": "consumable-manager-web",
+  "version": "1.0.0",
+  "description": "Consumable Manager Web Version",
+  "main": "dist/webServer.js",
+  "scripts": {
+    "start": "set NODE_ENV=production&& node webServer.js",
+    "dev": "set NODE_ENV=production&& node webServer.js",
+    "start:full": "set NODE_ENV=production&& node webServer.js",
+    "start:linux": "NODE_ENV=production node dist/webServer.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "mssql": "^11.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

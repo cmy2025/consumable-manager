@@ -1,0 +1,66 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #1b1e21;
+}
+
+
+#image_list ul img {
+    width: 100%;
+    height: auto;
+}
+
+
+#image_list ul li {
+    margin-right: 0;
+    width: 100%;
+}
+
+
+#image_list ul {
+    padding: 0 1em 0 1em;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: .8em;
+
+}
+
+#dcm-viewer {
+    padding: 0;
+    min-width: 1500px;
+    height: 100%;
+}
+
+#main-viewer {
+    padding: 1em 1em 1em 1em;
+    float: right;
+    width: 84%;
+    min-width: 1000px;
+    height: 100%;
+    margin: 0 .5%;
+}
+
+#main-viewer canvas {
+    /*width: 100%;*/
+    /*height: 850px;*/
+    width: 100%;
+    height: 100%;
+    border: black 1px solid;
+}
+
+#image_list {
+    box-sizing: border-box;
+    float: left;
+    width: 14%;
+    min-width: 220px;
+    height: 97%;
+    overflow: auto;
+    margin: 1% .5%;
+    border: solid  8px;
+}
+
+#img-container {
+    box-sizing: border-box;
+    padding: 1em 0;
+}

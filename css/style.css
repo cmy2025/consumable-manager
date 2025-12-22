@@ -1,0 +1,139 @@
+#main-header {
+     overflow: hidden;
+    height: 70px;
+    background: #0287c2;
+}
+
+#main-header #header-title p{
+    position: fixed;
+    left: 80px;
+    float: left;
+    font-size: 32px;
+    color: white;
+}
+
+#main-header #header-title h5 {
+    position: fixed;
+    left: 80px;
+    top:40px;
+    float: left;
+    float: left;
+    color: black;
+    font-size: 24px;
+    margin: 0;
+}
+
+#main-header #main-logo {
+    position: fixed;
+
+}
+
+#main-header #header-btn {
+    float: right;
+    background-size: cover;
+    height: 100%;
+    width: auto;
+    padding: 10px;
+}
+
+#main-header #header-btn img {
+    width: 50px;
+    height: auto;
+}
+
+#main-footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.my-form {
+    padding-left: 1em;
+    margin-top: 5em;
+}
+
+.custom-btn-size {
+    width: 120px;
+}
+
+#image_detail {
+    position: fixed;
+    right: 10px;
+    top: 300px;
+    width: 100px;
+    height: 60px;
+}
+
+.form-spacing label {
+    display: inline-block;
+    text-align: right;
+    padding-right: 1.2em;
+    margin-right: 0.3em;
+    width: 30%;
+}
+
+.form-spacing {
+    margin-right: 1.6em;
+}
+
+.col-md-4 {
+    margin-bottom: 1em !important;
+}
+
+#query-rows {
+    margin-top: 1.5em;
+}
+
+#report-viewer {
+    text-align: center;
+}
+
+.mid-button {
+    text-align: center;
+}
+
+.custom-input {
+    width: 60% !important;
+}
+
+.container h1 {
+    text-align: center;
+}
+
+#center-layout {
+    margin: 20% 35%;
+}
+
+.form-layout {
+    padding: 20px 0;
+}
+
+.row {
+    margin: 0 5%;
+}
+
+#query-rows {
+    margin-top: 0;
+}
+
+.btn-space {
+	margin-left:5px;
+}
+
+.submit-all {
+    float: right;
+    margin-top: 1em;
+    margin-right: 4em;
+}
+
+.to-all {
+    float: right;
+    margin: .7em 1em 1.5em 1em ;
+}
+
+.to-list {
+    float: right;
+    margin: .7em 1em 1.5em 1em ;
+}

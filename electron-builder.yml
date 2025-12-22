@@ -1,0 +1,67 @@
+appId: com.electron.app
+productName: consumabl-manager
+directories:
+  buildResources: build
+  output: dist-win
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!node_modules/axios/**'
+  - '!node_modules/express/**'
+  - '!node_modules/cors/**'
+  - '!node_modules/moment-timezone/**'
+  - '!node_modules/core-js/**'
+  - '!node_modules/es6-promise/**'
+  - '!node_modules/regenerator-runtime/**'
+  - '!**/*.map'
+  - '!**/*.d.ts'
+  - '!**/*.test.*'
+  - '!**/*.spec.*'
+  # 只保留中文和英文语言包，减少约 35MB
+  - '!**/locales/!(zh-CN|zh-TW|en-US|en-GB).pak'
+compression: maximum
+asarUnpack:
+  - resources/**
+win:
+  executableName: consumabl-manager
+  target:
+    - target: portable
+      arch: [x64]
+  # 只生成便携版，不生成安装程序
+  artifactName: ${productName}-${version}-portable.${ext}
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://example.com/auto-updates
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
