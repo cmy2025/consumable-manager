@@ -1,5 +1,4 @@
 import { LinearRegressionPredictor } from './linearRegression';
-import { LSTMPredictor } from './lstmModel';
 import { ARIMAPredictor } from './arimaModel';
 
 /**
@@ -30,11 +29,6 @@ export async function predictStock(options: PredictStockOptions): Promise<number
       predictions = linearModel.predictBatch(predictDays, xData);
 
     } else if (modelType === 'lstm') {
-      // LSTM预测（保持不变）
-      const lstmModel = new LSTMPredictor();
-      lstmModel.train(historyData);
-      predictions = lstmModel.predictBatch(historyData, predictDays);
-      lstmModel.dispose();
 
     } else if (modelType === 'arima') {
       // ARIMA预测
@@ -62,4 +56,4 @@ export async function predictStock(options: PredictStockOptions): Promise<number
 }
 
 // 导出模型类（包含ARIMA）
-export { LinearRegressionPredictor, LSTMPredictor, ARIMAPredictor };
+export { LinearRegressionPredictor, ARIMAPredictor };

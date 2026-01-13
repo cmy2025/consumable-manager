@@ -237,8 +237,7 @@ const currentConsumables = computed(() => {
 // 行样式
 const getRowStyle = ({ row }: { row: UpdateConsumableData }): Record<string, string> => {
   if (row.quantity <= 5) {
-    return { b
-    ackgroundColor: '#ffcccc' }
+    return { backgroundColor: '#ffcccc' }
   }
   return { backgroundColor: '#ffffff' }
 }
@@ -412,7 +411,6 @@ onMounted(() => {
 .exit-icon:hover {
   opacity: 0.7;
 }
-//不透明度opacity70%
 
 /* 退出按钮容器：固定在页面右下角，提高层级 */
 .exit-button-container {
