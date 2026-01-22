@@ -102,40 +102,287 @@ const linearRegression = (x: number[], y: number[], predictX: number[]): number[
   return result
 }
 
-// ===================== 原有工具函数：ARIMA =====================
-const arimaPredict = (data: number[], predictDays: number): number[] => {
-  console.log("【ARIMA】输入数据：", { data, predictDays })
-  const n = data.length
-  if (n < 2) {
-    console.error("【ARIMA】数据长度不足，至少需要2个数据")
-    return []
-  }
-
-  let arCoeff = 0
-  let variance = 0
-  const mean = data.reduce((a, b) => a + b, 0) / n
-  for (let i = 1; i < n; i++) {
-    arCoeff += (data[i] - mean) * (data[i - 1] - mean)
-    variance += Math.pow(data[i] - mean, 2)
-  }
-  arCoeff = arCoeff / variance
-
-  const residuals = []
-  for (let i = 1; i < n; i++) {
-    residuals.push(data[i] - mean - arCoeff * (data[i - 1] - mean))
-  }
-  const maCoeff = residuals.reduce((a, b) => a + b, 0) / residuals.length
-
-  const predictions = []
-  let lastValue = data[n - 1]
-  for (let i = 0; i < predictDays; i++) {
-    const pred = mean + arCoeff * (lastValue - mean) + maCoeff
-    predictions.push(pred)
-    lastValue = pred
-  }
-  console.log("【ARIMA】预测结果：", predictions)
-  return predictions
+// ===================== SARIMA预测模块（基于JSON参数） =====================
+// SARIMA参数类型定义
+interface SARIMAParams {
+  order?: { p?: number; d?: number; q?: number };
+  seasonal_order?: { P?: number; D?: number; Q?: number; S?: number };
+  ar_params?: number[];
+  ma_params?: number[];
+  seasonal_ar_params?: number[];
+  seasonal_ma_params?: number[];
+  intercept?: number;
+  sigma2?: number;
+  train_last_values?: number[];
+  train_last_date?: string;
+  aic?: number;
+  bic?: number;
+  version?: string;
+  train_time?: string;
 }
+
+// 全局SARIMA参数（修正默认值为JSON文件中的正确值）
+const sarimaParams = ref<SARIMAParams>({
+  order: { p: 1, d: 1, q: 1 },
+  seasonal_order: { P: 0, D: 1, Q: 1, S: 7 }, // 修正默认值
+  ar_params: [],
+  ma_params: [],
+  seasonal_ar_params: [],
+  seasonal_ma_params: [],
+  intercept: 0
+});
+
+// 加载SARIMA参数文件
+const loadSARIMAParams = async () => {
+  console.log("【SARIMA】开始加载参数文件...");
+  try {
+    let paramsPath: string;
+    
+    // 适配Electron/Web环境路径
+    if (window.electronAPI) {
+      console.log("【SARIMA】当前为Electron环境");
+      try {
+        const appPath = await window.electronAPI.getAppPath();
+        paramsPath = `file://${appPath}/public/models/arima/sarima_params.json`;
+      } catch (e) {
+        paramsPath = './models/arima/sarima_params.json';
+      }
+    } else {
+      console.log("【SARIMA】当前为Web环境");
+      paramsPath = '/models/arima/sarima_params.json';
+    }
+
+    // 验证文件可访问性
+    const response = await fetch(paramsPath);
+    if (!response.ok) {
+      throw new Error(`参数文件加载失败，状态码：${response.status}`);
+    }
+    
+    // 解析JSON参数（增加异常捕获）
+    let paramsData: any = {};
+    try {
+      paramsData = await response.json();
+    } catch (e) {
+      throw new Error(`JSON解析失败：${(e as Error).message}`);
+    }
+    
+    // 合并参数（使用默认值兜底，确保数值类型正确）
+    sarimaParams.value = {
+      // 默认值（与JSON文件一致）
+      order: { p: 1, d: 1, q: 1 },
+      seasonal_order: { P: 0, D: 1, Q: 1, S: 7 },
+      ar_params: [],
+      ma_params: [],
+      seasonal_ar_params: [],
+      seasonal_ma_params: [],
+      intercept: 0,
+      // 覆盖为加载的值（空值保护+强制数值转换）
+      ...paramsData,
+      order: {
+        p: Number(paramsData?.order?.p) ?? 1,
+        d: Number(paramsData?.order?.d) ?? 1,
+        q: Number(paramsData?.order?.q) ?? 1
+      },
+      seasonal_order: {
+        P: Number(paramsData?.seasonal_order?.P) ?? 0,
+        D: Number(paramsData?.seasonal_order?.D) ?? 1,
+        Q: Number(paramsData?.seasonal_order?.Q) ?? 1,
+        S: Number(paramsData?.seasonal_order?.S) ?? 7
+      },
+      ar_params: paramsData?.ar_params?.map(Number) ?? [],
+      ma_params: paramsData?.ma_params?.map(Number) ?? [],
+      seasonal_ar_params: paramsData?.seasonal_ar_params?.map(Number) ?? [],
+      seasonal_ma_params: paramsData?.seasonal_ma_params?.map(Number) ?? [],
+      intercept: Number(paramsData?.intercept) ?? 0
+    };
+
+    console.log("✅ 【SARIMA】参数加载成功：", {
+      order: `${sarimaParams.value.order.p},${sarimaParams.value.order.d},${sarimaParams.value.order.q}`,
+      seasonal_order: `${sarimaParams.value.seasonal_order.P},${sarimaParams.value.seasonal_order.D},${sarimaParams.value.seasonal_order.Q},${sarimaParams.value.seasonal_order.S}`,
+      ar_params: sarimaParams.value.ar_params,
+      ma_params: sarimaParams.value.ma_params,
+      seasonal_ma_params: sarimaParams.value.seasonal_ma_params
+    });
+
+  } catch (error) {
+    console.error("❌ 【SARIMA】参数加载失败详情：", error);
+    ElMessage.warning(`SARIMA参数加载失败，使用默认参数：${(error as Error).message}`);
+    // 保持默认参数不变
+  }
+};
+
+// 差分运算（d阶差分）
+const difference = (data: number[], d: number): number[] => {
+  let diffData = [...data];
+  for (let i = 0; i < d; i++) {
+    const newDiff = [];
+    for (let j = 1; j < diffData.length; j++) {
+      newDiff.push(diffData[j] - diffData[j - 1]);
+    }
+    diffData = newDiff;
+  }
+  return diffData;
+};
+
+// 逆差分运算（恢复d阶差分）- 修正初始值逻辑
+const inverseDifference = (data: number[], diffData: number[], d: number): number[] => {
+  let invData = [...diffData];
+  for (let i = 0; i < d; i++) {
+    const newInv = [data[data.length - 1]]; // 修正：使用最后一个原始值作为初始值
+    for (let j = 0; j < invData.length; j++) {
+      newInv.push(newInv[j] + invData[j]);
+    }
+    invData = newInv.slice(1);
+  }
+  return invData;
+};
+
+// 季节差分运算
+const seasonalDifference = (data: number[], D: number, S: number): number[] => {
+  let diffData = [...data];
+  for (let i = 0; i < D; i++) {
+    const newDiff = [];
+    for (let j = S; j < diffData.length; j++) {
+      newDiff.push(diffData[j] - diffData[j - S]);
+    }
+    diffData = newDiff;
+  }
+  return diffData;
+};
+
+// 逆季节差分运算 - 修正初始值逻辑
+const inverseSeasonalDifference = (data: number[], diffData: number[], D: number, S: number): number[] => {
+  let invData = [...diffData];
+  for (let i = 0; i < D; i++) {
+    const newInv = [...data.slice(-S)]; // 最后S个原始值
+    for (let j = 0; j < invData.length; j++) {
+      newInv.push(newInv[j] + invData[j]);
+    }
+    invData = newInv.slice(S);
+  }
+  return invData;
+};
+
+// SARIMA核心预测函数 - 修复MA项计算逻辑
+const sarimaPredict = async (data: number[], predictDays: number): Promise<number[]> => {
+  console.log("【SARIMA】预测输入：", { data, predictDays });
+
+  // 提取参数（增加空值保护）
+  const { 
+    order = { p: 1, d: 1, q: 1 },
+    seasonal_order = { P: 0, D: 1, Q: 1, S: 7 },
+    ar_params = [], 
+    ma_params = [], 
+    seasonal_ar_params = [], 
+    seasonal_ma_params = [], 
+    intercept = 0
+  } = sarimaParams.value;
+
+  // 解构参数（强制类型转换）
+  const p = Number(order.p) || 1;
+  const d = Number(order.d) || 1;
+  const q = Number(order.q) || 1;
+  const P = Number(seasonal_order.P) || 0; // 修正默认值为0
+  const D = Number(seasonal_order.D) || 1;
+  const Q = Number(seasonal_order.Q) || 1;
+  const S = Number(seasonal_order.S) || 7;
+
+  // 校验数据长度（至少需要季节周期长度）
+  const minLen = Math.max(S, p + P * S);
+  if (data.length < minLen) {
+    const errorMsg = `【SARIMA】数据长度不足，至少需要${minLen}个数据（当前：${data.length}）`;
+    console.error(errorMsg);
+    ElMessage.error(errorMsg);
+    return [];
+  }
+
+  try {
+    let predictions: number[] = [];
+    let currentData = [...data]; // 复制原始数据用于滚动预测
+    // 初始化残差数组（用于MA项计算）
+    let residuals = Array(q).fill(0);
+    // 初始化季节残差数组
+    let seasonalResiduals = Array(Q * S).fill(0);
+
+    // 逐天预测
+    for (let step = 0; step < predictDays; step++) {
+      // 1. 计算AR项（自回归项）
+      let arTerm = 0;
+      for (let i = 0; i < ar_params.length && i < currentData.length; i++) {
+        arTerm += ar_params[i] * currentData[currentData.length - 1 - i];
+      }
+
+      // 2. 计算季节AR项
+      let seasonalArTerm = 0;
+      for (let i = 0; i < seasonal_ar_params.length; i++) {
+        const lag = (i + 1) * S;
+        if (currentData.length > lag) {
+          seasonalArTerm += seasonal_ar_params[i] * currentData[currentData.length - 1 - lag];
+        }
+      }
+
+      // 3. 计算MA项（移动平均项）- 修复：使用残差数组而非预测误差
+      let maTerm = 0;
+      for (let i = 0; i < ma_params.length && i < residuals.length; i++) {
+        maTerm += ma_params[i] * residuals[residuals.length - 1 - i];
+      }
+
+      // 4. 计算季节MA项 - 修复：正确计算滞后索引
+      let seasonalMaTerm = 0;
+      for (let i = 0; i < seasonal_ma_params.length; i++) {
+        const lagIndex = seasonalResiduals.length - 1 - i;
+        if (lagIndex >= 0) {
+          seasonalMaTerm += seasonal_ma_params[i] * seasonalResiduals[lagIndex];
+        }
+      }
+
+      // 5. 计算基础预测值
+      let predValue = intercept + arTerm + seasonalArTerm + maTerm + seasonalMaTerm;
+
+      // 6. 应用差分逆变换（如果有差分阶数）
+      if (d > 0 || D > 0) {
+        // 简化的逆差分处理
+        const recentData = currentData.slice(-Math.max(d, D * S));
+        let diffPred = [predValue];
+        
+        if (D > 0) {
+          diffPred = inverseSeasonalDifference(recentData, diffPred, D, S);
+        }
+        if (d > 0) {
+          diffPred = inverseDifference(recentData, diffPred, d);
+        }
+        
+        predValue = diffPred[0];
+      }
+
+      // 7. 确保预测值非负
+      predValue = Math.max(0, Number(predValue.toFixed(2)));
+      
+      // 8. 更新残差数组（用于下一次预测的MA项计算）
+      const residual = predValue - (currentData[currentData.length - 1] || 0);
+      residuals.push(residual);
+      if (residuals.length > q) residuals.shift();
+      
+      // 9. 更新季节残差数组
+      seasonalResiduals.push(residual);
+      if (seasonalResiduals.length > Q * S) seasonalResiduals.shift();
+      
+      // 10. 保存预测结果并更新当前数据
+      predictions.push(predValue);
+      currentData.push(predValue);
+
+      console.log(`【SARIMA】第${step + 1}天预测值：${predValue}`);
+    }
+
+    console.log("✅ 【SARIMA】最终预测结果：", predictions);
+    return predictions;
+
+  } catch (error) {
+    console.error("❌ 【SARIMA】预测过程出错：", error);
+    ElMessage.error(`SARIMA预测失败：${(error as Error).message}`);
+    return [];
+  }
+};
 
 // ===================== LSTM（TFJS）预测函数 =====================
 let lstmModel: tf.LayersModel | null = null
@@ -301,7 +548,11 @@ watch(chartRef, () => {
 // onMounted初始化
 onMounted(async () => {
   console.log("【页面】初始化开始")
-  await loadLSTMModel()
+  // 并行加载LSTM模型和SARIMA参数
+  await Promise.all([
+    loadLSTMModel(),
+    loadSARIMAParams()
+  ])
   await nextTick()
   initChart()
   console.log("【页面】初始化完成")
@@ -363,9 +614,20 @@ const handlePredict = async () => {
     
     console.log("【页面】解析后的历史数据：", historyData)
     
-    const minLen = inputForm.method === 'lstm' ? 7 : 2
+    // 根据模型类型设置最小数据长度
+    let minLen = 2;
+    if (inputForm.method === 'lstm') {
+      minLen = 7;
+    } else if (inputForm.method === 'arima') {
+      // 安全获取参数
+      const S = sarimaParams.value?.seasonal_order?.S ?? 7;
+      const p = sarimaParams.value?.order?.p ?? 1;
+      const P = sarimaParams.value?.seasonal_order?.P ?? 0; // 修正默认值为0
+      minLen = Math.max(S, p + P * S);
+    }
+    
     if (historyData.length < minLen) {
-      throw new Error(`${inputForm.method === 'lstm' ? 'LSTM' : '线性回归/ARIMA'}需要至少${minLen}个数据（当前：${historyData.length}）`)
+      throw new Error(`${inputForm.method === 'lstm' ? 'LSTM' : (inputForm.method === 'arima' ? 'SARIMA' : '线性回归')}需要至少${minLen}个数据（当前：${historyData.length}）`)
     }
     
     const predictDays = inputForm.predictDays
@@ -379,7 +641,7 @@ const handlePredict = async () => {
         predictions = linearRegression(x, historyData, predictX)
         break
       case 'arima':
-        predictions = arimaPredict(historyData, predictDays)
+        predictions = await sarimaPredict(historyData, predictDays)
         break
       case 'lstm':
         predictions = await lstmPredict(historyData, predictDays)

@@ -1,0 +1,33 @@
+{
+    "order": {
+        "p": 1,
+        "d": 1,
+        "q": 1
+    },
+    "seasonal_order": {
+        "P": 0,
+        "D": 1,
+        "Q": 1,
+        "S": 7
+    },
+    "ar_params": [
+        0.0935789817530173
+    ],
+    "ma_params": [
+        -1.0000053053856433
+    ],
+    "seasonal_ar_params": [],
+    "seasonal_ma_params": [
+        -0.6456732815011474
+    ],
+    "intercept": 0.0,
+    "sigma2": 0.0,
+    "train_last_values": [
+        78.68614959716797
+    ],
+    "train_last_date": "2025-11-07",
+    "aic": 1468.2902123465653,
+    "bic": 1482.7280995273052,
+    "version": "v2.0 (SARIMA)",
+    "train_time": "2026-01-19 14:09:49"
+}
