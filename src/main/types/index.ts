@@ -103,3 +103,38 @@ export interface ApiResponse<T = unknown> {
   error?: string
   message?: string
 }
+// 新增：定义登录相关的类型（建议放到 ../types 中，这里先内联补充）
+export interface LoginForm {
+  username: string
+  password: string
+}
+
+export interface LoginResponse {
+  success: boolean
+  data?: {
+    id: number          // 对应Users表的id
+    username: string    // 对应Users表的username
+    realName: string    // 对应Users表的realName
+    role: string        // 对应Users表的role
+  }
+  error?: string        // 登录失败的错误信息
+}
+
+export interface RegisterForm {
+  username: string    // 注册用户名
+  password: string    // 注册密码
+  confirmPassword: string // 确认密码
+  realName: string    // 真实姓名
+  role?: string       // 角色（默认user，仅管理员可指定admin）
+}
+
+export interface RegisterResponse {
+  success: boolean
+  data?: {
+    id: number
+    username: string
+    realName: string
+    role: string
+  }
+  error?: string
+}

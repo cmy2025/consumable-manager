@@ -489,6 +489,7 @@ export async function deleteInRecord(recordId: number): Promise<void> {
     throw error
   }
 }
+
 // 插入日志记录的函数
 export async function insertLog(logType: string, logModule: string, logMessage: string, logUser: string, logExt0?: string, logExt1?: string, logExt2?: string, logExt3?: string, logExt4?: string) {
   const pool = await getConnection();

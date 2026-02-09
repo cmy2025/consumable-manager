@@ -7,7 +7,9 @@ import type {
   RecordsQuery,
   RecordsDataQuery,
   StatisticsQuery,
-  LineChartQuery
+  LineChartQuery,
+  LoginResponse,
+  LoginForm
 } from '../types'
 
 // HTTP API 基础配置
@@ -19,7 +21,67 @@ const httpClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+// 新增：请求拦截器 - 携带登录态（可选，若后端用token验证则需要）
+httpClient.interceptors.request.use(
+  (config) => {
+    // 从会话存储中获取用户ID（登录后存储），可扩展为token
+    const userId = sessionStorage.getItem('userId')
+    if (userId) {
+      config.headers['X-User-Id'] = userId // 自定义请求头传递用户ID
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// 新增：响应拦截器 - 统一处理登录过期
+httpClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // 若后端返回401/403，判定为登录过期，清空存储并跳转登录页
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      sessionStorage.removeItem('userId')
+      sessionStorage.removeItem('username')
+      sessionStorage.removeItem('realName')
+      sessionStorage.removeItem('role')
+      // 提示并跳转（需确保router已全局引入，或用window.location）
+      window.alert('登录已过期，请重新登录')
+      window.location.href = '#/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const httpApiService = {
+   // 用户登录
+   login: async (loginForm: LoginForm): Promise<LoginResponse> => {
+    const response = await httpClient.post<LoginResponse>('/login', loginForm)
+    return response.data
+  },
+
+  // 用户退出（前端清理存储，若后端需要登出接口可补充）
+  logout: () => {
+    // 清空登录态存储
+    sessionStorage.removeItem('userId')
+    sessionStorage.removeItem('username')
+    sessionStorage.removeItem('realName')
+    sessionStorage.removeItem('role')
+    // 可选：调用后端登出接口
+    // return httpClient.post('/auth/logout').then(res => res.data)
+    return Promise.resolve({ success: true })
+  },
+
+  // 获取当前登录用户信息（可选，从存储读取或后端查询）
+  getCurrentUser: () => {
+    return {
+      userId: sessionStorage.getItem('userId'),
+      username: sessionStorage.getItem('username'),
+      realName: sessionStorage.getItem('realName'),
+      role: sessionStorage.getItem('role')
+    }
+  },
+
   // 获取耗材
   getConsumables: async (queryParams: Record<string, string> = {}) => {
     const response = await httpClient.get('/consumables', {

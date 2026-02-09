@@ -81,7 +81,7 @@
 
       <!-- 折叠按钮，替换成图片 -->
       <div class="collapse-btn" @click="toggleCollapse">
-        <img src="../assets/setting.png" alt="Collapse" style="width: 17px; height: 17px" />
+        <img src="../assets/cat3.png" alt="Collapse" style="width: 45px; height: 45px" />
       </div>
     </div>
 
@@ -187,22 +187,29 @@ onMounted(() => {
 .sidebar-container.collapsed .el-submenu__title span {
   display: none;
 }
-
 .collapse-btn {
   position: absolute;
   top: 0px;
-  right: -20px;
-  width: 32px;
-  height: 32px;
+  right: -30px;
+  width: 60px;
+  height: 43px;
   border-radius: 50%;
-  background-color: #303133;
+  /* 核心修改：移除背景色，设置完全透明 */
+  background-color: transparent;
+  /* 移除默认边框（可选，避免出现边框） */
+  border: none;
+  /* 移除内边距（可选，避免影响图片居中） */
+  padding: 0;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  /* 移除阴影（可选，透明背景下阴影会显得突兀） */
+  box-shadow: none;
   z-index: 20;
+  /* 确保点击区域生效（可选） */
+  pointer-events: auto;
 }
 
 .collapse-btn img {
@@ -210,11 +217,21 @@ onMounted(() => {
   /* 默认不透明 */
   transition: opacity 0.1s ease;
   /* 添加过渡效果 */
+  /* 可选：让图片填满按钮区域，保持圆形 */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 .collapse-btn img:hover {
-  opacity: 0.3;
-  /* 鼠标悬停时透明度降低 */
+  opacity: 1;
+  /* 调整悬停透明度（0.3太淡，建议0.7更友好，可自行修改） */
+}
+
+/* 可选：如果需要保留点击反馈，添加:active状态 */
+.collapse-btn:active img {
+  opacity: 0.5;
 }
 
 .main-content {

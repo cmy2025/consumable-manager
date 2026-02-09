@@ -1,5 +1,28 @@
 <template>
   <div class="home-view">
+    <!-- 新增：右上角登录/退出按钮 -->
+    <div class="user-actions">
+      <span v-if="isLoggedIn" class="user-name">
+        欢迎，{{ realName || username }}
+      </span>
+      <el-button
+        v-if="!isLoggedIn"
+        type="primary"
+        size="small"
+        @click="toLogin"
+      >
+        登录
+      </el-button>
+      <el-button
+        v-else
+        type="danger"
+        size="small"
+        @click="handleLogout"
+      >
+        退出登录
+      </el-button>
+    </div>
+
     <!-- 顶部统计卡片 -->
     <div class="stats-container">
       <div v-for="stat in stats" :key="stat.name" class="stat-card">
@@ -14,9 +37,35 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { apiService } from '../api/index'
+
+const router = useRouter()
+
+// 新增：登录状态相关
+const isLoggedIn = computed(() => !!sessionStorage.getItem('userId'))
+const username = computed(() => sessionStorage.getItem('username') || '')
+const realName = computed(() => sessionStorage.getItem('realName') || '')
+
+// 跳转到登录页
+const toLogin = () => {
+  router.push('/login')
+}
+
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await apiService.logout()
+    sessionStorage.clear()
+    ElMessage.success('退出成功！')
+    router.push('/login')
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : '退出失败'
+    ElMessage.error(errMsg)
+  }
+}
 
 // 统计数据
 const stats = ref([
@@ -65,6 +114,22 @@ onUnmounted(() => {
   flex-direction: column;
   background-color: #f5f5f5;
   box-sizing: border-box;
+  position: relative; /* 新增：为按钮定位做准备 */
+}
+
+/* 新增：用户操作按钮样式 */
+.user-actions {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-name {
+  color: #303133;
+  font-size: 14px;
 }
 
 .stats-container {
@@ -75,6 +140,7 @@ onUnmounted(() => {
   max-width: 800px;
   margin: 20px auto 0;
   padding: 0 20px;
+  margin-top: 60px; /* 新增：避免按钮遮挡统计卡片 */
 }
 
 .stat-card {

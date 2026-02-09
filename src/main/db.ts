@@ -2,7 +2,8 @@ import mssql from 'mssql'
 import { app } from 'electron'
 import { join } from 'path'
 import { promises as fs } from 'fs'
-
+// 新增：导入 bcryptjs
+import * as bcrypt from 'bcryptjs'
 // 默认数据库配置
 const defaultConfig = {
   user: 'sa',
@@ -71,7 +72,153 @@ function convertToMssqlConfig(dbConfig: DatabaseConfig): mssql.config {
     }
   }
 }
+interface User {
+  id: number
+  username: string
+  password: string // 建议存储加密后的密码（如MD5/SHA256）
+  realName: string
+  role: string // 如 'admin'/'user'
+}
+/**
+ * 验证用户登录信息（使用 bcrypt 验证密码）
+ * @param username 用户名
+ * @param password 明文密码
+ * @returns 匹配的用户信息（不含密码）或 null
+ */
+ export async function verifyUserLogin(username: string, password: string): Promise<User | null> {
+  try {
+    const pool = await getConnection()
+    const request = pool.request()
+      .input('username', mssql.NVarChar, username)
 
+    // 1. 查询用户信息（包含加密后的密码）
+    const result = await request.query(`
+      SELECT id, username, password, realName, role 
+      FROM Users 
+      WHERE username = @username
+    `)
+
+    // 2. 没有找到用户
+    if (result.recordset.length === 0) {
+      return null
+    }
+
+    const user = result.recordset[0]
+    
+    // 3. 使用 bcrypt 验证密码
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    if (!isPasswordValid) {
+      return null
+    }
+
+    // 4. 返回用户信息（移除密码字段）
+    const { password: _, ...userWithoutPassword } = user
+    return userWithoutPassword as User
+  } catch (error) {
+    console.error('用户登录验证失败:', error)
+    throw error
+  }
+}
+
+/**
+ * 注册新用户（使用 bcrypt 加密密码）
+ * @param userData 用户注册信息
+ * @returns 注册结果
+ */
+export async function registerUser(userData: {
+  username: string
+  password: string // 明文密码
+  realName: string
+  role: string
+}): Promise<{
+  success: boolean
+  data?: {
+    id: number
+    username: string
+    realName: string
+    role: string
+  }
+  error?: string
+}> {
+  try {
+    const pool = await getConnection()
+    
+    // 1. 检查用户名是否已存在
+    const checkRequest = pool.request()
+      .input('username', mssql.NVarChar, userData.username)
+    const checkResult = await checkRequest.query(`
+      SELECT id FROM Users WHERE username = @username
+    `)
+    
+    if (checkResult.recordset.length > 0) {
+      return {
+        success: false,
+        error: '用户名已存在，请更换用户名'
+      }
+    }
+
+    // 2. 生成盐值并加密密码（盐轮数 10，平衡安全性和性能）
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(userData.password, salt)
+
+    // 3. 插入新用户（存储加密后的密码）
+    const insertRequest = pool.request()
+      .input('username', mssql.NVarChar, userData.username)
+      .input('password', mssql.NVarChar, hashedPassword) // 存储哈希值
+      .input('realName', mssql.NVarChar, userData.realName)
+      .input('role', mssql.NVarChar, userData.role || 'user')
+    
+    await insertRequest.query(`
+      INSERT INTO Users (username, password, realName, role)
+      VALUES (@username, @password, @realName, @role)
+    `)
+
+    // 4. 获取新注册用户的信息（不含密码）
+    const newUserResult = await checkRequest.query(`
+      SELECT id, username, realName, role 
+      FROM Users WHERE username = @username
+    `)
+
+    const newUser = newUserResult.recordset[0]
+    
+    return {
+      success: true,
+      data: {
+        id: newUser.id,
+        username: newUser.username,
+        realName: newUser.realName,
+        role: newUser.role
+      }
+    }
+  } catch (error) {
+    console.error('用户注册失败:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '注册失败，请重试'
+    }
+  }
+}
+
+/**
+ * 登出操作（可扩展：如记录登出日志、清理会话等）
+ * @param username 用户名
+ * @returns 操作结果
+ */
+export async function handleUserLogout(username: string): Promise<boolean> {
+  try {
+    // 示例：登出时插入操作日志（复用已有的 insertLog 函数）
+    await insertLog(
+      'OPERATE',
+      'USER',
+      `用户 ${username} 登出系统`,
+      username
+    )
+    return true
+  } catch (error) {
+    console.error('处理用户登出失败:', error)
+    return false
+  }
+}
 export async function getConsumableLineChartData(query: {
   startTime: Date | null
   endTime: Date | null

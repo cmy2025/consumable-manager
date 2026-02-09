@@ -1,129 +1,146 @@
+
 <template>
- <el-card>
-  <div class="表单容器">
-   <el-form：model=queryForm label-width="80">
-    <el-row :gutter="20">
-     <!--耗材ID列-->
-     <el-col :span="">
-      <el-form-item lable="耗材ID">
-       <el-input v-model="queryForm.itemid" autocomplete="off"/>
-      </el-form-item>
-     </el-col>
-     <!--名称列-->
-     <el-col>
-      <el-form-item lable="耗材ID">
-        
-      </el-form-item>
-     </el-col>
-     <!--公司列-->
-     <el-col>
-      <el-form-item lable="耗材ID">
-        
-      </el-form-item>
-     </el-col>
-     <!--按钮列-->
-     <el-col>
-      <el-form-item>
-        <div class="按钮容器">
-         <!--第一个按钮-->
-         <el-button type="info" @click="handleQuery">查询
-         </el-button>
-         <!--第二个自定义按钮-->
-         <img src="../../refresh.png" alt="Refresh" class="refresh" @click="handleRefresh">
-        </div>
-      </el-form-item>
-     </el-col>
+  <div>
+    主页
+    <el-row>
+      <el-col :span="6">
+        <div style="width: 100%; height: 30px; background-color: deeppink"></div></el-col>
+      <el-col :span="6">
+        <div style="width: 100%; height: 30px; background-color: orange"></div></el-col>
     </el-row>
-   </el-form>
+    <el-row :gutter="20">
+      <el-col :span="1">
+        <div style="width: 100%; height: 300px; background-color: dodgerblue"></div></el-col>
+      <el-col :span="23">
+        <div style="width: 100%; height: 300px; background-color: red"></div></el-col>
+    </el-row>
+    <el-row>
+      <el-col :span="6">
+        <div style="padding: 10px; border: 1px solid #ccc;text-align:center">
+          <img style="width: 100%" src="../assets/refresh2.png" alt="">
+          <div style="text-align: center"> 商品 1 </div>
+          <div style= "color: red">价格 $99.00</div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <GoodsCard 
+          goodsName="商品 2" 
+          price="$99.00" 
+          :imgUrl="refreshImg"
+        />
+      </el-col>
+      <el-col :span="6">
+        <div style="padding: 10px; border: 1px solid #ccc;text-align:center">
+          <img style="width: 100%" src="../assets/refresh2.png" alt="">
+          <div style="text-align: center"> 商品 3 </div>
+          <div style="color: red">价格 $99.00</div>
+          </div>
+      </el-col>
+      <el-col :span="6">
+        <div style="padding: 10px; border: 1px solid #ccc;text-align:center">
+          <img style="width: 100%" src="../assets/refresh2.png" alt="">
+          <div style="text-align: center"> 商品 4 </div>
+          <div style="color: red">价格 $99.00</div>
+        </div>
+      </el-col>
+    </el-row>
   </div>
-  <!--添加新耗材的按钮-->
-  <div class="table-header">
-    <el-bottom type="primary" @click="oppenAddDialog">添加新耗材</el-bottom>
-  </div>
-  <!--编辑和删除的按钮-->
-  <el-table
-    v-loading="loading"
-    :data="currentConsumables"
-    style=""
-    :row-style=""
-    :cell-style="{}"
-  >
-    <el-table-column prop="itemid" lable="耗材ID"  />
-    <el-table-column prop="name" lable="名称" />
-    。。。
-    <el-table-column label="操作" fixed="right">
-      <template #default="scope">
-        <div style="display:flex;..">
-          <el-button type="primary" size=small @click="editItem(scope.row)">编辑</el-button>
-          <el-button type="danger" size=small @click="deleteItem(scope.row)">删除</el-button>
-      </template>
-    <el-table-column>
-  </el-table>
-
-  <!--分页功能-->
-  <!--注意:xxx=""的写法是[：属性="属性值"]的意思-->
-  <!--注意@xxx=""的写法是[@事件名="调用函数名"]的意思-->
-  <el-pagination
-    :current-page="currentPage"
-    :page-sizes="[5,10,20,30,50]"
-    :page-size="pageSize"
-    layout="total,sizes."
-    :total="total"
-    @current-change="handleCurrentChange"
-    @size-change="handleSizeChange"
-  >
-  </el-pagination>
-
-  <!--返回按钮-->
-
-  <!--添加新耗材对话框-->
-  <el-dialog v-modal='addDialogVisible' title='添加耗材' :close-on-click-model='false'>
-    <el-form>
-      <!--耗材ID-->
-      <el-form-item label="耗材ID">
-        <el-input v-model="addForm.item"></el-input>
-      </el-form-item>
-      <!--耗材名称-->
-      <el-form-item label="名称">
-        <el-input></el-input>
-      </el-form-item>
-      <!--耗材数量-->
-      <el-form-item label="数量">
-        <el-input v-model="addForm.quantity" :min="0" ></el-input>
-      </el-form-item>
-     .... 
-    </el-form>
-    <template #footer>
-      <el-button @click='editDialogVisible=false' >取消</el-button>
-      <el-button type="primary" :loading='addFormLoading' @click='handleAddConsumable' >提交</el-button>
-  </el-dialog>
-
-  <!-- 删除确认对话框 -->
-    <el-dialog v-model="deleteDialogVisible" title="确认删除" width="300px">
-      <template #default>
-        <div>确定要删除该耗材吗？</div>
-      </template>
-      <template #footer>
-        <el-button @click="deleteDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="deleteLoading" @click="handleDeleteConsumable">
-          确认
-        </el-button>
-      </template>
-    </el-dialog>
-
-
- </el-card>
 </template>
 
-<script setup lang="ts">
 
+<script lang="ts" setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { apiService } from '../api/index'
+import GoodsCard from '../components/GoodsCard.vue'
+import refreshImg from '../assets/refresh2.png' // 这里写实际的相对路径
 
+// 统计数据
+const stats = ref([
+  { name: '总耗材数', value: '0', icon: '📦' },
+  { name: '今日入库', value: '0', icon: '📥' },
+  { name: '今日出库', value: '0', icon: '📤' },
+  { name: '库存预警', value: '0', icon: '⚠️' }
+])
 
+// 获取统计数据
+const fetchStats = async (): Promise<void> => {
+  try {
+    const consumables = await apiService.getConsumables()
+    const totalConsumables = Array.isArray(consumables) ? consumables.length : 0
+    const todayInRecords = (await apiService.getTodayInRecords()) as number
+    const todayOutRecords = (await apiService.getTodayOutRecords()) as number
+    const inventoryWarnings = (await apiService.getInventoryWarnings()) as number
+
+    stats.value[0].value = totalConsumables.toString()
+    stats.value[1].value = todayInRecords.toString()
+    stats.value[2].value = todayOutRecords.toString()
+    stats.value[3].value = inventoryWarnings.toString()
+  } catch (e) {
+    const msg = e && typeof e === 'object' && 'message' in e ? e.message : String(e)
+    ElMessage.error('获取统计数据失败: ' + msg)
+  }
+}
+
+let intervalId
+
+onMounted(() => {
+  fetchStats()
+  intervalId = setInterval(fetchStats, 60000)
+})
+
+onUnmounted(() => {
+  clearInterval(intervalId)
+})
 </script>
 
 <style scoped>
+.home-view {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f5f5;
+  box-sizing: border-box;
+}
 
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 800px;
+  margin: 20px auto 0;
+  padding: 0 20px;
+}
 
+.stat-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+}
 
+.icon {
+  font-size: 36px;
+  margin-right: 15px;
+}
 
+.content {
+  flex: 1;
+}
+
+.content h3 {
+  font-size: 16px;
+  color: #606266;
+  margin-bottom: 5px;
+}
+
+.content .value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+}
 </style>

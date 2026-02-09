@@ -2,7 +2,7 @@ import path from 'path'
 import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron'
 import renderer from 'vite-plugin-electron-renderer'
-
+import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   server: {
     port: 5137, //前端端口
@@ -35,6 +35,7 @@ export default defineConfig({
         }
       }
     ]),
-    renderer()
+    renderer(),
+    vue()
   ]
 })

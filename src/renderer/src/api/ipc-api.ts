@@ -6,7 +6,11 @@ import type {
   RecordsQuery,
   RecordsDataQuery,
   StatisticsQuery,
-  LineChartQuery
+  LineChartQuery,
+  LoginForm,   // 新增导入登录表单类型
+  LoginResponse, // 新增导入登录响应类型
+  RegisterForm, 
+  RegisterResponse
 } from '../types'
 
 export interface IpcResult {
@@ -16,6 +20,86 @@ export interface IpcResult {
 }
 
 export const ipcApiService = {
+   // ========== 新增：用户注册 ==========
+  register: async (registerForm: RegisterForm): Promise<RegisterResponse> => {
+    try {
+      // 提取可序列化的字段
+      const registerData = {
+        username: registerForm.username || '',
+        password: registerForm.password || '',
+        realName: registerForm.realName || '',
+        role: registerForm.role || 'user'  // 默认普通用户
+      };
+      
+      const result = (await window.electronAPI.invoke('auth-register', registerData)) as RegisterResponse;
+      return result;
+    } catch (error) {
+      console.error('注册失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '注册过程发生未知错误'
+      };
+    }
+  },
+  login: async (loginForm: LoginForm): Promise<LoginResponse> => {
+    try {
+      // 🌟 关键：提取纯JSON可序列化的基础字段，避免复杂对象
+      const loginData = {
+        username: loginForm.username || '',
+        password: loginForm.password || ''
+        // 仅保留字符串/数字/布尔等基础类型，移除函数、Symbol、循环引用等
+      };
+      
+      // 传递纯净的基础类型数据
+      const result = (await window.electronAPI.invoke('auth-login', loginData)) as LoginResponse;
+      
+      if (result.success && result.data) {
+        sessionStorage.setItem('userId', result.data.id.toString());
+        sessionStorage.setItem('username', result.data.username);
+        sessionStorage.setItem('realName', result.data.realName);
+        sessionStorage.setItem('role', result.data.role);
+      }
+      return result;
+    } catch (error) {
+      console.error('登录失败:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '登录过程发生未知错误'
+      };
+    }
+  },
+
+  // ========== 新增：用户退出 ==========
+  logout: async (): Promise<IpcResult> => {
+    try {
+      // 调用后端登出IPC接口（可选）
+      const result = (await window.electronAPI.invoke('auth-logout')) as IpcResult
+      
+      // 清空本地存储（与http-api.ts逻辑对齐）
+      sessionStorage.removeItem('userId')
+      sessionStorage.removeItem('username')
+      sessionStorage.removeItem('realName')
+      sessionStorage.removeItem('role')
+      
+      return result || { success: true }
+    } catch (error) {
+      console.error('退出登录失败:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '退出登录过程发生未知错误'
+      }
+    }
+  },
+
+  // ========== 新增：获取当前登录用户信息 ==========
+  getCurrentUser: () => {
+    return {
+      userId: sessionStorage.getItem('userId'),
+      username: sessionStorage.getItem('username'),
+      realName: sessionStorage.getItem('realName'),
+      role: sessionStorage.getItem('role')
+    }
+  },
   // 获取耗材
   getConsumables: async (queryString: string = '') => {
     try {

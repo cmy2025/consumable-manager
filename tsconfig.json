@@ -16,7 +16,11 @@
       "src/main/types"
     ]
   },
-  "include": [],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts", 
+    "src/**/*.vue"
+  ],
   "exclude": ["node_modules", "dist"],
   "files": [],
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]

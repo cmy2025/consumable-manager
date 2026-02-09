@@ -10,7 +10,11 @@ import type {
   StatisticsQuery,
   LineChartQuery,
   QueryParams,
-  UpdateConsumableQuantityParams
+  UpdateConsumableQuantityParams,
+  LoginForm, 
+  LoginResponse,
+  RegisterForm,  // 新增导入
+  RegisterResponse  // 新增导入
 } from './types'
 import {
   addConsumable,
@@ -31,6 +35,9 @@ import {
   getConsumableLineChartData,
   getConsumableStatistics,
   testConnectionWithConfig,
+  verifyUserLogin, 
+  handleUserLogout, 
+  registerUser,  // 新增导入：用户注册函数
   insertLog
 } from './db'
 import { predictStock, PredictStockOptions } from './prediction/index'; // 导入预测核心函数
@@ -105,6 +112,137 @@ async function getConsumablesWithQuery(queryString: string): Promise<unknown[]> 
 }
 
 export function setupIpcHandlers(): void {
+   // ========== 新增：用户注册 IPC 处理器 ==========
+   ipcMain.handle('auth-register', async (_event, registerData: RegisterForm): Promise<RegisterResponse> => {
+    try {
+      const { username, password, realName, role } = registerData
+
+      // 1. 基础参数校验
+      if (!username || !password || !realName) {
+        return {
+          success: false,
+          error: '用户名、密码和真实姓名不能为空'
+        }
+      }
+
+      // 2. 调用 db 层注册用户
+      const result = await registerUser({
+        username,
+        password,
+        realName,
+        role: role || 'user'
+      })
+
+      if (result.success) {
+        // 注册成功：插入日志
+        await insertLog(
+          'OPERATE',
+          'REGISTER',
+          `用户 ${username} 注册成功`,
+          username
+        )
+        
+        return {
+          success: true,
+          data: result.data
+        }
+      } else {
+        // 注册失败：插入日志
+        await insertLog(
+          'ERROR',
+          'REGISTER',
+          `用户 ${username} 注册失败：${result.error}`,
+          username
+        )
+        
+        return {
+          success: false,
+          error: result.error
+        }
+      }
+    } catch (error) {
+      console.error('处理注册请求失败:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '注册服务异常，请重试'
+      }
+    }
+  })
+   // ========== 新增：用户登录 IPC 处理器 ==========
+   ipcMain.handle('auth-login', async (_event, loginData: LoginForm): Promise<LoginResponse> => {
+    try {
+      const { username, password } = loginData
+
+      // 1. 基础参数校验
+      if (!username || !password) {
+        return {
+          success: false,
+          error: '用户名和密码不能为空'
+        }
+      }
+
+      // 2. 调用 db 层验证用户
+      const user = await verifyUserLogin(username, password)
+      if (!user) {
+        // 登录失败：插入日志
+        await insertLog(
+          'ERROR',
+          'LOGIN',
+          `用户 ${username} 登录失败：用户名或密码错误`,
+          username
+        )
+        return {
+          success: false,
+          error: '用户名或密码错误'
+        }
+      }
+
+      // 3. 登录成功：插入操作日志
+      await insertLog(
+        'OPERATE',
+        'LOGIN',
+        `用户 ${username} 登录系统成功`,
+        username
+      )
+
+      // 4. 返回用户信息（不含密码）
+      return {
+        success: true,
+        data: {
+          id: user.id,
+          username: user.username,
+          realName: user.realName,
+          role: user.role
+        }
+      }
+    } catch (error) {
+      console.error('处理登录请求失败:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '登录服务异常，请重试'
+      }
+    }
+  })
+
+  // ========== 新增：用户登出 IPC 处理器 ==========
+  ipcMain.handle('auth-logout', async (_event, username?: string): Promise<{
+    success: boolean
+    error?: string
+  }> => {
+    try {
+      if (username) {
+        await handleUserLogout(username) // 调用 db 层登出逻辑
+      }
+      return { success: true }
+    } catch (error) {
+      console.error('处理登出请求失败:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '登出失败，请重试'
+      }
+    }
+  })
+
   // 获取耗材
   ipcMain.handle('get-consumables', async (_event, queryString: string) => {
     try {
