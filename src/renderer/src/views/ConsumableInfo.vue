@@ -326,7 +326,18 @@ const handleQuery = async (): void => {
 const handleAddConsumable = async (): Promise<void> => {
   addFormLoading.value = true
   try {
-    await apiService.addConsumable(addForm.value)
+    // 核心：提取纯JSON可序列化的基础字段（仅保留字符串/数字）
+    const pureConsumableData = {
+      itemid: addForm.value.itemid.trim(), // 去除首尾空格，确保纯字符串
+      name: addForm.value.name.trim(),
+      quantity: Number(addForm.value.quantity), // 强制转为数字，避免隐式类型问题
+      unit: addForm.value.unit.trim(),
+      company: addForm.value.company.trim(),
+      status: addForm.value.status.trim(),
+      registrant: addForm.value.registrant.trim()
+    };
+    // 传递纯JSON对象，而非响应式对象
+    await apiService.addConsumable(pureConsumableData)
     ElMessage.success('添加成功')
     addDialogVisible.value = false
     fetchConsumables()
